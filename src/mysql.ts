@@ -36,7 +36,11 @@ class MySQL {
                     console.error(err);
                     reject(err);
                 } else {
-                    resolve(parseResult(results as any[]));
+                    if (sql.trim().toUpperCase().startsWith('SELECT')) {
+                        resolve(parseResult(results as any[]));
+                    } else {
+                        resolve(results);
+                    }
                 }
             });
         });
