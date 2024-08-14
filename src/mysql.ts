@@ -52,7 +52,7 @@ class MySQL {
         const columns = await this.getColumns(table);
         const query = ` INSERT INTO ${table} (${columns.join(',')}) 
                         VALUES (${columns.map((column: string) => "?").join(',')})`;
-        const values = columns.map((column: string) => data[column]);
+        const values = columns.map((column: string) => formatValue(data[column]));
         const results = await this.query(query, values);
         return results.insertId;
     }
@@ -60,7 +60,7 @@ class MySQL {
     private static async update(table: string, data: any): Promise<boolean> {
         const columns = await this.getColumns(table);
         const query = `UPDATE ${table} SET ${columns.map((column: string) => `${column} = ?`).join(',')} WHERE id = ?`;
-        const values = columns.map((column: string) => data[column]);
+        const values = columns.map((column: string) => formatValue(data[column]));
         values.push(data.id);
         const results = await this.query(query, values);
         return results.affectedRows > 0;
@@ -150,3 +150,11 @@ class MySQL {
 }
 
 export default MySQL;
+
+function formatValue(value: any): any {
+    // Si array of string convertir en json (string[])
+    if (Array.isArray(value) && value.every((v) => typeof v === 'string')) {
+        return JSON.stringify(value);
+    }
+    return value;
+}
