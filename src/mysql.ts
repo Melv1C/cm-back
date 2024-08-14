@@ -161,6 +161,7 @@ function formatValue(value: any): any {
 }
 
 function parseResult(results: { [key: string]: any }[]): { [key: string]: any }[] {
+    console.log(results);
     for (const result of results) {
         for (const key in result) {
             if (typeof result[key] === 'string' && result[key].startsWith('[') && result[key].endsWith(']')) {
