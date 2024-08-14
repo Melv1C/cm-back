@@ -2,6 +2,7 @@ import mysql from 'mysql2';
 import dotenv from 'dotenv';
 
 import { BaseData } from 'cm-data';
+import { QueryResult } from 'mysql2';
 
 dotenv.config();
 
@@ -35,7 +36,9 @@ class MySQL {
                     console.error(err);
                     reject(err);
                 } else {
-                    resolve(results);
+                    const resultsArray: { [key: string]: any }[] = JSON.parse(JSON.stringify(results));
+                    const parsedResults = resultsArray.map(parseValue);
+                    resolve(parsedResults);
                 }
             });
         });
@@ -157,4 +160,16 @@ function formatValue(value: any): any {
         return JSON.stringify(value);
     }
     return value;
+}
+
+function parseValue(result: { [key: string]: any }): { [key: string]: any } {
+    // SI string et commence par [ et fini par ] alors JSON.parse
+    return Object.keys(result).reduce((acc: { [key: string]: any }, key: string) => {
+        if (typeof result[key] === 'string' && result[key].startsWith('[') && result[key].endsWith(']')) {
+            acc[key] = JSON.parse(result[key]);
+        } else {
+            acc[key] = result[key];
+        }
+        return acc;
+    }, {});
 }
