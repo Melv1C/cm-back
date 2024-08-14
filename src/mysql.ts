@@ -31,14 +31,12 @@ class MySQL {
     static async query(sql: string, values?: any): Promise<any> {
         this.logQuery(sql, values);
         return new Promise((resolve, reject) => {
-            this.connection.query(sql, values, (err, results) => {
+            this.connection.query(sql, values, (err, results: QueryResult) => {
                 if (err) {
                     console.error(err);
                     reject(err);
                 } else {
-                    const resultsArray: { [key: string]: any }[] = JSON.parse(JSON.stringify(results));
-                    const parsedResults = resultsArray.map(parseValue);
-                    resolve(parsedResults);
+                    resolve(parseResult(results as any[]));
                 }
             });
         });
@@ -162,14 +160,13 @@ function formatValue(value: any): any {
     return value;
 }
 
-function parseValue(result: { [key: string]: any }): { [key: string]: any } {
-    // SI string et commence par [ et fini par ] alors JSON.parse
-    return Object.keys(result).reduce((acc: { [key: string]: any }, key: string) => {
-        if (typeof result[key] === 'string' && result[key].startsWith('[') && result[key].endsWith(']')) {
-            acc[key] = JSON.parse(result[key]);
-        } else {
-            acc[key] = result[key];
+function parseResult(results: { [key: string]: any }[]): { [key: string]: any }[] {
+    for (const result of results) {
+        for (const key in result) {
+            if (typeof result[key] === 'string' && result[key].startsWith('[') && result[key].endsWith(']')) {
+                result[key] = JSON.parse(result[key]);
+            }
         }
-        return acc;
-    }, {});
+    }
+    return results;
 }
