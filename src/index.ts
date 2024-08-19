@@ -8,4 +8,3 @@ export { checkAdmin }
 import Token, {generateToken} from "./Token";
 export { Token, generateToken }
 
-

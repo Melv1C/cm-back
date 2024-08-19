@@ -21,18 +21,11 @@ class MySQL {
         });
     }
 
-    private static logQuery(query: string, values: any) {
-        console.log('query:', query);
-        if (values) {
-            console.log('values:', values);
-        }
-    }
-
     static async query(sql: string, values?: any): Promise<any> {
-        this.logQuery(sql, values);
         return new Promise((resolve, reject) => {
             this.connection.query(sql, values, (err, results: QueryResult) => {
                 if (err) {
+                    console.log(sql, values);
                     console.error(err);
                     reject(err);
                 } else {
@@ -161,17 +154,23 @@ function formatValue(value: any): any {
     if (Array.isArray(value) && value.every((v) => typeof v === 'string')) {
         return JSON.stringify(value);
     }
+
     return value;
 }
 
 function parseResult(results: { [key: string]: any }[]): { [key: string]: any }[] {
-    console.log(results);
     for (const result of results) {
         for (const key in result) {
             if (typeof result[key] === 'string' && result[key].startsWith('[') && result[key].endsWith(']')) {
                 result[key] = JSON.parse(result[key]);
             }
+            // Si Date convertir a Date
+            if (result[key] instanceof Date) {
+                result[key] = new Date(result[key]);
+            }
         }
     }
     return results;
 }
+
+
