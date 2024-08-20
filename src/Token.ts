@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
+import { Request, Response } from 'express';
+
 
 import { User } from 'cm-data';
 
@@ -60,4 +62,24 @@ export default Token;
 export function generateToken(user: User): string {
     return Token.fromUser(user).encode();
 }
+
+export function checkToken(req: Request, res: Response, next: any) {
+
+    if (!req.headers.authorization) {
+        res.status(401).json({ message: 'Token required' });
+        return;
+    }
+
+    const token : Token | null = Token.decode(req.headers.authorization || '');
+
+    if (!token) {
+        res.status(401).json({ message: 'Invalid token' });
+        return;
+    }
+
+    req.body.token = token;
+
+    next();
+}
+
 
