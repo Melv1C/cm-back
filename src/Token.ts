@@ -53,15 +53,29 @@ class Token {
             return Token.fromJSON(decoded);
         } catch (err: any) {
             if (err.name === 'TokenExpiredError') {
-                throw new Error('Token expired');
+                throw new ExpiredTokenError();
             } else {
-                throw new Error('Invalid token');
+                throw new InvalidTokenError();
             }
         }
     }
 }
 
 export default Token;
+
+export class ExpiredTokenError extends Error {
+    constructor() {
+        super('Token expired');
+        this.name = 'ExpiredTokenError';
+    }
+}
+
+export class InvalidTokenError extends Error {
+    constructor() {
+        super('Invalid token');
+        this.name = 'InvalidTokenError';
+    }
+}
 
 export function generateToken(user: User): string {
     return Token.fromUser(user).encode();
@@ -85,9 +99,8 @@ export function checkToken(req: Request, res: Response, next: any) {
         req.body.token = decoded;
 
         next();
-    } catch (err: any) {
-        console.log(err);
-       if (err.name === 'TokenExpiredError') {
+    } catch (err) {
+        if (err instanceof ExpiredTokenError) {
             res.status(401).json({ message: 'Token expired' });
         } else {
             res.status(401).json({ message: 'Invalid token' });

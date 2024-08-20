@@ -19,15 +19,15 @@ export { Token, generateToken, checkToken }
 //     console.log('token:', token);
 
 //     // decode the token
-//     const decoded = Token.decode(token);
-//     console.log('decoded:', decoded);
-
-
-//     // check the token
-//     const req: any = { headers: { authorization: `Bearer ${token}` } };
-//     const res: any = { status: (code: number) => ({ json: (data: any) => console.log(data) }) };
-//     const next = () => console.log('next');
-//     checkToken(req, res, next);
+//     setTimeout(() => {
+//         console.log('decoding token...');
+//         try {
+//             const decoded = Token.decode(token);
+//             console.log('decoded:', decoded);
+//         } catch (err: any) {
+//             console.error(err.message);
+//         }
+//     }, 2000);
 // }
 
 // test();
