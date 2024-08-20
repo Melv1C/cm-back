@@ -2,8 +2,8 @@
 import MySQL from "./mysql";
 export { MySQL }
 
-import Token, {generateToken, checkToken} from "./Token";
-export { Token, generateToken, checkToken }
+import Token, {generateToken, checkToken, InvalidTokenError, ExpiredTokenError} from "./Token";
+export { Token, generateToken, checkToken, InvalidTokenError, ExpiredTokenError }
 
 // import { User } from "cm-data";
 // import bcrypt from 'bcryptjs';
