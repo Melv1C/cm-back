@@ -43,16 +43,20 @@ class Token {
     }
 
     encode(): string {
+        console.log(this.toJSON());
         return jwt.sign(this.toJSON(), JWT_SECRET, { expiresIn: TIME_VALID });
     }
 
-    static decode(token: string): Token | null {
+    static decode(token: string): Token {
         try {
-            const json = jwt.verify(token, JWT_SECRET);
-            return Token.fromJSON(json);
-        } catch (error) {
-            console.error(error);
-            return null;
+            const decoded = jwt.verify(token, JWT_SECRET);
+            return Token.fromJSON(decoded);
+        } catch (err: any) {
+            if (err.name === 'TokenExpiredError') {
+                throw new Error('Token expired');
+            } else {
+                throw new Error('Invalid token');
+            }
         }
     }
 }
@@ -70,16 +74,25 @@ export function checkToken(req: Request, res: Response, next: any) {
         return;
     }
 
-    const token : Token | null = Token.decode(req.headers.authorization || '');
+    try {
+        const token = req.headers.authorization.split(' ')[1];
+        const decoded: Token = Token.decode(token);
 
-    if (!token) {
-        res.status(401).json({ message: 'Invalid token' });
-        return;
+        // Add the token to the request body
+        if (!req.body) {
+            req.body = {};
+        }
+        req.body.token = decoded;
+
+        next();
+    } catch (err: any) {
+        console.log(err);
+       if (err.name === 'TokenExpiredError') {
+            res.status(401).json({ message: 'Token expired' });
+        } else {
+            res.status(401).json({ message: 'Invalid token' });
+        }
     }
-
-    req.body.token = token;
-
-    next();
 }
 
 

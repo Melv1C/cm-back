@@ -19,6 +19,8 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "bcryptjs": "^2.4.3",
     "cm-data": "github:Melv1C/cm-data",
     "dotenv": "^16.4.5",
     "jsonwebtoken": "^9.0.2",
