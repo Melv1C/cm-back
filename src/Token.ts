@@ -17,15 +17,23 @@ class Token {
     constructor() {
     }
 
+    static fromJSON(json: any): Token {
+        const token = new Token();
+        token.user = json.user;
+        token.password = json.password;
+        token.level = json.level;
+        token.expire_at = new Date(json.expire_at);
+        return token;
+    }
+
     encode(): string {
         this.expire_at = new Date(Date.now() + TIME_VALID);
         return jwt.sign(this.toJSON(), JWT_SECRET, { expiresIn: TIME_VALID });
     }
 
-    decode(token: string): Token {
+    static decode(token: string): Token {
         const decoded: any = jwt.verify(token, JWT_SECRET);
-        this.fromJSON(decoded);
-        return this;
+        return Token.fromJSON(decoded);       
     }
 
     isValid(): boolean {
