@@ -17,6 +17,15 @@ class Token {
     constructor() {
     }
 
+    toJSON(): any {
+        return {
+            user: this.user,
+            password: this.password,
+            level: this.level,
+            expire_at: this.expire_at.toISOString()
+        };
+    }
+
     static fromJSON(json: any): Token {
         const token = new Token();
         token.user = json.user;
