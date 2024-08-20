@@ -12,12 +12,15 @@ export function checkAdmin(req: Request, res: Response, next: any) {
     const token : Token = Token.decode(req.headers.authorization || '');
 
     if (!token.isValid()) {
-        res.status(401).json({ status: 'Unauthorized', message: 'Token expired' });
+        res.status(402).json({ status: 'Token expired', message: 'Token expired' });
         return;
     } else if (token.level < 1) {
         res.status(401).json({ status: 'Unauthorized', message: 'Not authorized' });
         return;
     }
+
+    token.resetExpire();
+    res.setHeader('Authorization', token.encode());
 
     next();
 }

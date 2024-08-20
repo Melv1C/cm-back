@@ -48,6 +48,10 @@ class Token {
     isValid(): boolean {
         return this.expire_at.getTime() > Date.now();
     }
+
+    resetExpire(): void {
+        this.expire_at = new Date(Date.now() + TIME_VALID);
+    }
 }
 
 export default Token;
