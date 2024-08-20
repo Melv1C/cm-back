@@ -1,66 +1,63 @@
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
 
+import { User } from 'cm-data';
+
 dotenv.config();
 
 const JWT_SECRET = process.env.JWT_SECRET || '';
-const TIME_VALID = 3600000;
+const TIME_VALID = 24 * 60 * 60 * 1000; // 24 hours
 
 class Token {
-    user: string = '';
-    password: string = '';
-    level: number = 0;
-    expire_at: Date = new Date(Date.now() + TIME_VALID);
-
-    [key: string]: any; // to allow any other property
+    user_id:    number = 0;
+    username:   string = '';
+    role:       string = '';
 
     constructor() {
     }
 
     toJSON(): any {
         return {
-            user: this.user,
-            password: this.password,
-            level: this.level,
-            expire_at: this.expire_at.toISOString()
+            user_id: this.user_id,
+            username: this.username,
+            role: this.role
         };
     }
 
     static fromJSON(json: any): Token {
         const token = new Token();
-        token.user = json.user;
-        token.password = json.password;
-        token.level = json.level;
-        token.expire_at = new Date(json.expire_at);
+        token.user_id = json.user_id;
+        token.username = json.username;
+        token.role = json.role;
+        return token;
+    }
+
+    static fromUser(user: User): Token {
+        const token = new Token();
+        token.user_id = user.id;
+        token.username = user.username;
+        token.role = user.role;
         return token;
     }
 
     encode(): string {
-        this.expire_at = new Date(Date.now() + TIME_VALID);
         return jwt.sign(this.toJSON(), JWT_SECRET, { expiresIn: TIME_VALID });
     }
 
-    static decode(token: string): Token {
-        const decoded: any = jwt.verify(token, JWT_SECRET);
-        return Token.fromJSON(decoded);       
-    }
-
-    isValid(): boolean {
-        return this.expire_at.getTime() > Date.now();
-    }
-
-    resetExpire(): void {
-        this.expire_at = new Date(Date.now() + TIME_VALID);
+    static decode(token: string): Token | null {
+        try {
+            const json = jwt.verify(token, JWT_SECRET);
+            return Token.fromJSON(json);
+        } catch (error) {
+            console.error(error);
+            return null;
+        }
     }
 }
 
 export default Token;
 
-export function generateToken(user: string, password: string, level: number): string {
-    const token = new Token();
-    token.user = user;
-    token.password = password;
-    token.level = level;
-    return token.encode();
+export function generateToken(user: User): string {
+    return Token.fromUser(user).encode();
 }
 

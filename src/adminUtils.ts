@@ -2,25 +2,21 @@
 import { Request, Response } from 'express';
 import Token from './Token';
 
-export function checkAdmin(req: Request, res: Response, next: any) {
+export function checkToken(req: Request, res: Response, next: any) {
 
     if (!req.headers.authorization) {
-        res.status(401).json({ status: 'Unauthorized', message: 'Token required' });
+        res.status(401).json({ message: 'Token required' });
         return;
     }
 
-    const token : Token = Token.decode(req.headers.authorization || '');
+    const token : Token | null = Token.decode(req.headers.authorization || '');
 
-    if (!token.isValid()) {
-        res.status(402).json({ status: 'Token expired', message: 'Token expired' });
-        return;
-    } else if (token.level < 1) {
-        res.status(401).json({ status: 'Unauthorized', message: 'Not authorized' });
+    if (!token) {
+        res.status(401).json({ message: 'Invalid token' });
         return;
     }
 
-    token.resetExpire();
-    res.setHeader('Authorization', token.encode());
+    req.body.token = token;
 
     next();
 }
