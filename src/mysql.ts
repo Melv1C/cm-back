@@ -1,50 +1,73 @@
-import mysql from 'mysql2';
+import mysql from 'mysql2/promise';
 import dotenv from 'dotenv';
 
 import { BaseData } from 'cm-data';
-import { QueryResult } from 'mysql2';
 
 dotenv.config();
 
+export class QueryError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = 'QueryError';
+    }
+}
+
 class MySQL {
     
-    private static connection: mysql.Connection;
+    private static pool: mysql.Pool;
 
     static init() {
-        this.connection = mysql.createConnection({
+
+        this.pool = mysql.createPool({
             host: process.env.MYSQL_HOST,
             port: process.env.MYSQL_PORT ? parseInt(process.env.MYSQL_PORT) : 3306,
             user: process.env.MYSQL_USER,
             password: process.env.MYSQL_PASSWORD,
             database: process.env.MYSQL_DATABASE,
-            timezone: 'Z'
+            timezone: 'Z',
+            waitForConnections: true,
+            connectionLimit: 10,
+            queueLimit: 0
         });
     }
 
     static async query(sql: string, values?: any): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this.connection.query(sql, values, (err, results: QueryResult) => {
-                if (err) {
-                    console.log(sql, values);
-                    console.error(err);
-                    reject(err);
-                } else {
-                    if (sql.trim().toUpperCase().startsWith('SELECT')) {
-                        resolve(parseResult(results as any[]));
-                    } else {
-                        resolve(results);
-                    }
-                }
-            });
-        });
+        const connection = await this.pool.getConnection();
+        try {
+            const [rows, fields] = await connection.query(sql, values);
+            // Parse the results if rows is mysql.RowDataPacket[]
+            if (Array.isArray(rows) && fields) {
+                return parseData(rows as mysql.RowDataPacket[], fields);
+            } else {
+                return rows;
+            }
+        } catch (err: any) {
+            throw new QueryError(err.message);
+        } finally {
+            connection.release();
+        }
     }
-
+    /**
+     * Get the columns of a table
+     * 
+     * @param table The table name
+     * @returns The columns of the table
+     */
     private static async getColumns(table: string): Promise<string[]> {
         const query = `SHOW COLUMNS FROM ${table}`;
         const results = await this.query(query);
         // omit the create_at and update_at columns
         return results.map((result: any) => result.Field).filter((column: string) => !['create_at', 'update_at'].includes(column));
     }
+
+    /**
+     * Insert a row in a table
+     * 
+     * @param table The table name
+     * @param data The data to insert
+     * @returns The id of the new row
+     * @throws Error if the query fails
+     */
 
     private static async insert(table: string, data: any): Promise<number> {
         const columns = await this.getColumns(table);
@@ -55,6 +78,16 @@ class MySQL {
         return results.insertId;
     }
 
+
+    /**
+     * Update a row in a table
+     * 
+     * @param table The table name
+     * @param data The data to update
+     * @returns true if the row was updated, false otherwise
+     * @throws Error if the query fails
+     * @throws Error if the row does not exist
+     */
     private static async update(table: string, data: any): Promise<boolean> {
         const columns = await this.getColumns(table);
         const query = `UPDATE ${table} SET ${columns.map((column: string) => `${column} = ?`).join(',')} WHERE id = ?`;
@@ -149,28 +182,54 @@ class MySQL {
 
 export default MySQL;
 
-function formatValue(value: any): any {
-    // Si array of string convertir en json (string[])
-    if (Array.isArray(value) && value.every((v) => typeof v === 'string')) {
-        return JSON.stringify(value);
-    }
+function parseData(rows: mysql.RowDataPacket[], fields: mysql.FieldPacket[]): mysql.QueryResult {
+    return rows.map((row) => {
+        const parsedRow: any = {};
 
-    return value;
+        fields.forEach((field) => {
+            const fieldName = field.name;
+            const fieldType = field.type;
+            const value = row[fieldName];
+
+            // Handle the different data types
+            if (value !== null) {
+                switch (fieldType) {
+                    case mysql.Types.DATE:
+                    case mysql.Types.DATETIME:
+                    case mysql.Types.TIMESTAMP:
+                        parsedRow[fieldName] = new Date(value); // Convert to JavaScript Date
+                        break;
+                    case mysql.Types.JSON:
+                        try {
+                            parsedRow[fieldName] = JSON.parse(value); // Parse JSON string
+                        } catch (e) {
+                            console.error(`Error parsing JSON for field ${fieldName}:`, e);
+                            parsedRow[fieldName] = value; // Return as is if parsing fails
+                        }
+                        break;
+                    // Add more cases as needed for other specific data types
+                    default:
+                        parsedRow[fieldName] = value; // Default case
+                        break;
+                }
+            } else {
+                parsedRow[fieldName] = value; // Handle nulls
+            }
+        });
+
+        return parsedRow;
+    });
 }
 
-function parseResult(results: { [key: string]: any }[]): { [key: string]: any }[] {
-    for (const result of results) {
-        for (const key in result) {
-            if (typeof result[key] === 'string' && result[key].startsWith('[') && result[key].endsWith(']')) {
-                result[key] = JSON.parse(result[key]);
-            }
-            // Si Date convertir a Date
-            if (result[key] instanceof Date) {
-                result[key] = new Date(result[key]);
-            }
-        }
+
+function formatValue(value: any): any {
+    if (value instanceof Date) {
+        return value.toISOString().replace('T', ' ').replace('Z', '');
+    } else if (typeof value === 'object' || Array.isArray(value)) {
+        return JSON.stringify(value);
+    } else {
+        return value;
     }
-    return results;
 }
 
 

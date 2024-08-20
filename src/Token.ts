@@ -109,3 +109,15 @@ export function checkToken(req: Request, res: Response, next: any) {
 }
 
 
+export function checkRole(role: string) {
+    return (req: Request, res: Response, next: any) => {
+        const token_role = req.body.token.role;
+        if (role !== token_role) {
+            res.status(403).json({ message: 'Forbidden' });
+            return;
+        }
+        next();
+    }
+}
+
+

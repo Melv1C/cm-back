@@ -1,33 +1,9 @@
 
-import MySQL from "./mysql";
-export { MySQL }
+import MySQL, {QueryError} from "./mysql";
+export { MySQL, QueryError }
 
-import Token, {generateToken, checkToken, InvalidTokenError, ExpiredTokenError} from "./Token";
-export { Token, generateToken, checkToken, InvalidTokenError, ExpiredTokenError }
+import Token, {generateToken, checkToken, checkRole} from "./Token";
+export { Token, generateToken, checkToken, checkRole }
 
-// import { User } from "cm-data";
-// import bcrypt from 'bcryptjs';
-
-// MySQL.init();
-// async function test() {
-
-//     // get the admin
-//     const admin: User = User.fromJson((await MySQL.query('SELECT * FROM users WHERE username = ?', ['admin']))[0]);
-
-//     // generate a token for the admin
-//     const token = generateToken(admin);
-//     console.log('token:', token);
-
-//     // decode the token
-//     setTimeout(() => {
-//         console.log('decoding token...');
-//         try {
-//             const decoded = Token.decode(token);
-//             console.log('decoded:', decoded);
-//         } catch (err: any) {
-//             console.error(err.message);
-//         }
-//     }, 2000);
-// }
-
-// test();
+import { InvalidTokenError, ExpiredTokenError } from "./Token";
+export { InvalidTokenError, ExpiredTokenError }
