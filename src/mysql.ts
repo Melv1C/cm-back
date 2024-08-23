@@ -199,14 +199,6 @@ function parseData(rows: mysql.RowDataPacket[], fields: mysql.FieldPacket[]): my
                     case mysql.Types.TIMESTAMP:
                         parsedRow[fieldName] = new Date(value); // Convert to JavaScript Date
                         break;
-                    case mysql.Types.JSON:
-                        try {
-                            parsedRow[fieldName] = JSON.parse(value); // Parse JSON string
-                        } catch (e) {
-                            console.error(`Error parsing JSON for field ${fieldName}:`, e);
-                            parsedRow[fieldName] = value; // Return as is if parsing fails
-                        }
-                        break;
                     // Add more cases as needed for other specific data types
                     default:
                         parsedRow[fieldName] = value; // Default case
